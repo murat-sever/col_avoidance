@@ -90,14 +90,14 @@ arm_and_takeoff(5)
 
 #get detection.relative_position
 #get detection.booleen
-relative_position=(2,2)
+
 booleen=1
 
 
 #get servo.flag
 #get GCS.zone
 flag=-1
-zone=1
+zone=2
 Sx_min=-1
 Sx_max=1
 Sy_min=-1
@@ -105,10 +105,8 @@ Sy_max=1
 h_net=2
 h_camera=1
 
-xI= relative_position[0]
-yI= relative_position[1]
 
-def get_location_metres(original_location, dNorth, dEast):
+def get_location_metres(original_location, dNorth, dEast, dDown):
     """
     Returns a LocationGlobal object containing the latitude/longitude `dNorth` and `dEast` metres from the 
     specified `original_location`. The returned LocationGlobal has the same `alt` value
@@ -126,14 +124,16 @@ def get_location_metres(original_location, dNorth, dEast):
     #Coordinate offsets in radians
     dLat = dNorth/earth_radius
     dLon = dEast/(earth_radius*math.cos(math.pi*original_location.lat/180))
+    dAlt = -dDown
 
     #New position in decimal degrees
     newlat = original_location.lat + (dLat * 180/math.pi)
     newlon = original_location.lon + (dLon * 180/math.pi)
+    newalt = original_location.alt + (dAlt * 180/math.pi)
     if type(original_location) is LocationGlobal:
-        targetlocation=LocationGlobal(newlat, newlon,original_location.alt)
+        targetlocation=LocationGlobal(newlat, newlon, newalt)
     elif type(original_location) is LocationGlobalRelative:
-        targetlocation=LocationGlobalRelative(newlat, newlon,original_location.alt)
+        targetlocation=LocationGlobalRelative(newlat, newlon, newalt)
     else:
         raise Exception("Invalid Location object passed")
         
@@ -150,19 +150,21 @@ def get_distance_metres(aLocation1, aLocation2):
     """
     dlat = aLocation2.lat - aLocation1.lat
     dlong = aLocation2.lon - aLocation1.lon
-    return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+    dalt = aLocation2.alt - aLocation1.alt
+    return math.sqrt((dlat*dlat) + (dlong*dlong) + (dalt*dalt)) * 1.113195e5
 
 start_time= time.time()   
 while vehicle.mode.name=="GUIDED":
     phi = vehicle.heading
-    print(phi)
+    print('phi=',phi)
     currentLocation = vehicle.location.global_relative_frame
     currentcoordinates= vehicle.location.local_frame
     (x,y,z)=(currentcoordinates.north,currentcoordinates.east,currentcoordinates.down)
     print(currentcoordinates)
     #t=vehicle.time
     print(time.time()-start_time)
-    relative_position=(10-(time.time()-start_time),10-(time.time()-start_time)) #vehicle.velocity=1??
+    #relative_position=(10-(time.time()-start_time),10-(time.time()-start_time)) #vehicle.velocity=1??
+    relative_position=(2,2)
     xI= relative_position[0]
     yI= relative_position[1]
     print(xI,yI)
@@ -176,7 +178,7 @@ while vehicle.mode.name=="GUIDED":
             l2=-flag*sign(yI)
             (n,e,d)=(x-l1*math.sin(phi*math.pi/180),y+l1*math.cos(phi*math.pi/180),z+l2)
             goto_position_target_local_ned(n, e, d)
-            targetLocation = get_location_metres(currentLocation, n, e) #down???
+            targetLocation = get_location_metres(currentLocation, n, e, d) #down???
             targetDistance = get_distance_metres(currentLocation, targetLocation)
             vehicle.simple_goto(targetLocation)
             remainingDistance=get_distance_metres(vehicle.location.global_relative_frame, targetLocation)
