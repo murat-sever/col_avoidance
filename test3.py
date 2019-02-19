@@ -12,7 +12,6 @@ parser.add_argument('--connect',
 args = parser.parse_args()
 
 connection_string = args.connect
-#connection_string = '192.168.1.1:14550'
 sitl = None
 
 #Start SITL if no connection string specified
@@ -20,15 +19,10 @@ if not connection_string:
     import dronekit_sitl
     sitl = dronekit_sitl.start_default()
     connection_string = sitl.connection_string()
-    #connection_string = 'udpbcast:192.168.1.1:14550'
 
 # Connect to the Vehicle
 print('Connecting to vehicle on: %s' % connection_string)
 vehicle = connect(connection_string, wait_ready=True)
-
-
-#vehicle=connect('udpbcast:192.168.2.255:14550',wait_ready=True,baud=57600)
-
 
 def arm_and_takeoff(aTargetAltitude):
     """
@@ -91,7 +85,7 @@ arm_and_takeoff(5)
 #get detection.relative_position
 #get detection.booleen
 
-booleen=1
+#booleen=1
 
 
 #get servo.flag
@@ -153,6 +147,7 @@ def get_distance_metres(aLocation1, aLocation2):
     dalt = aLocation2.alt - aLocation1.alt
     return math.sqrt((dlat*dlat) + (dlong*dlong) + (dalt*dalt)) * 1.113195e5
 
+i=0
 start_time= time.time()   
 while vehicle.mode.name=="GUIDED":
     phi = vehicle.heading
@@ -169,25 +164,31 @@ while vehicle.mode.name=="GUIDED":
     yI= relative_position[1]
     print(xI,yI)
 
+    if i<15:
+	booleen=1
+    else:
+	booleen=0
+	
+
     #get xI et yI
     #get booleen
     #get flag
     if booleen==1:
         if flag==-1:
-            l1=flag*sign(xI)
-            l2=-flag*sign(yI)
+            l1=flag*sign(xI)*50
+            l2=-flag*sign(yI)*50
             (n,e,d)=(x-l1*math.sin(phi*math.pi/180),y+l1*math.cos(phi*math.pi/180),z+l2)
             goto_position_target_local_ned(n, e, d)
-            targetLocation = get_location_metres(currentLocation, n, e, d) #down???
-            targetDistance = get_distance_metres(currentLocation, targetLocation)
-            vehicle.simple_goto(targetLocation)
-            remainingDistance=get_distance_metres(vehicle.location.global_relative_frame, targetLocation)
+            #targetLocation = get_location_metres(currentLocation, n, e, d) #down???
+            #targetDistance = get_distance_metres(currentLocation, targetLocation)
+            #vehicle.simple_goto(targetLocation)
+            #remainingDistance=get_distance_metres(vehicle.location.global_relative_frame, targetLocation)
             
-            print("Distance to target: ", remainingDistance)
-            if remainingDistance<=targetDistance*0.01: #Just below target, in case of undershoot.
-                print("Reached target")
-                break;
-            time.sleep(2)
+            #print("Distance to target: ", remainingDistance)
+            #if remainingDistance<=targetDistance*0.01: #Just below target, in case of undershoot.
+            #    print("Reached target")
+            #    break;
+            #time.sleep(2)
     
         elif flag==1 and zone==1 and (xI<Sx_min or xI>Sx_max) and (yI<Sy_min or yI>Sy_max):
             l1=flag*sign(xI)
@@ -197,6 +198,7 @@ while vehicle.mode.name=="GUIDED":
             goto_position_target_local_ned(x, y, z)
     
         #else
-            # no msg    
+            # no msg  
+    i=i+1  
             
 print(x,y,z)        
