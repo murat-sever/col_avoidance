@@ -90,12 +90,12 @@ arm_and_takeoff(5)
 
 #get servo.flag
 #get GCS.zone
-flag=-1
+flag=1
 zone=1
-Sx_min=-1
-Sx_max=1
-Sy_min=-1
-Sy_max=1
+Sx_min=-2
+Sx_max=2
+Sy_min=-2
+Sy_max=2
 h_net=2
 h_camera=1
 
@@ -157,9 +157,13 @@ while vehicle.mode.name=="GUIDED":
     (x,y,z)=(currentcoordinates.north,currentcoordinates.east,currentcoordinates.down)
     print(currentcoordinates)
     #t=vehicle.time
-    #print(time.time()-start_time)
-    #relative_position=(10-(time.time()-start_time),10-(time.time()-start_time)) #vehicle.velocity=1??
-    relative_position=(-2,-2)
+    print("time=",time.time()-start_time)
+    if time.time()-start_time<100:
+	relative_position=(4-(time.time()-start_time)*0.3,4-(time.time()-start_time)*0.3) #vehicle.velocity=1??
+    else:
+	relative_position=(0,0)
+    
+#relative_position=(-2,-2)
     xI= relative_position[0]
     yI= relative_position[1]
     print(xI,yI)
@@ -175,21 +179,13 @@ while vehicle.mode.name=="GUIDED":
     if booleen==1:
         print('detected')
         if flag==-1:
-            l1=flag*sign(xI)*50
-            l2=-flag*sign(yI)*50
+            l1=flag*sign(xI)*10
+            l2=-flag*sign(yI)
             (n,e,d)=(-l1*math.sin(phi*math.pi/180),l1*math.cos(phi*math.pi/180),l2)
-            goto_position_target_local_ned(n, e, d)
-            #targetLocation = get_location_metres(currentLocation, n, e, d) #down???
-            #targetDistance = get_distance_metres(currentLocation, targetLocation)
-            #vehicle.simple_goto(targetLocation)
-            remainingDistance=get_distance_metres(vehicle.location.global_relative_frame, targetLocation)
-            print('colision av')           
-            print("Distance to target: ", remainingDistance)
-            if remainingDistance<=targetDistance*0.01: #Just below target, in case of undershoot.
-                print("Reached target")
-                break;
-            time.sleep(2)
-    
+	    print('n=',n)
+	    print('e=',e)
+	    print('d=',d)
+            
         if flag==1 and zone==1 and (xI<Sx_min or xI>Sx_max) and (yI<Sy_min or yI>Sy_max):
             l1=flag*sign(xI)*10
             l2=-flag*sign(yI)
@@ -199,12 +195,16 @@ while vehicle.mode.name=="GUIDED":
 	    print('n=',n)
 	    print('e=',e)
 	    print('d=',d)
+	if flag==1 and zone==1 and (xI>Sx_min and xI<Sx_max) :
+	    l2=-flag*sign(yI)
+	    (n,e,d)=(0,0,l2)
 
-           #send MAVLink msg
-            goto_position_target_local_ned(n,e,d)
+	if flag==1 and zone==1 and (yI>Sy_min and yI<Sy_max):
+	   l1=flag*sign(xI)*10
+	   (n,e,d)=(-l1*math.sin(phi*math.pi/180),l1*math.cos(phi*math.pi/180),0)
+
+        # send MAVLink msg
+        goto_position_target_local_ned(n,e,d)
     
         #else
             # no msg  
-    i=i+1  
-            
-print(x,y,z)        
