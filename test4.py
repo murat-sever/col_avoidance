@@ -177,10 +177,11 @@ while vehicle.mode.name=="GUIDED":
     #get booleen
     #get flag
     if booleen==1:
-        print('detected')
+        print('a drone is detected')
         if flag==-1:
             l1=flag*sign(xI)*10
             l2=-flag*sign(yI)
+	    print('col_avoid')
             (n,e,d)=(-l1*math.sin(phi*math.pi/180),l1*math.cos(phi*math.pi/180),l2)
 	    print('n=',n)
 	    print('e=',e)
@@ -197,14 +198,22 @@ while vehicle.mode.name=="GUIDED":
 	    print('d=',d)
 	if flag==1 and zone==1 and (xI>Sx_min and xI<Sx_max) :
 	    l2=-flag*sign(yI)
+	    print('track and threshold x')
 	    (n,e,d)=(0,0,l2)
+	    print('n=',n)
+	    print('e=',e)
+	    print('d=',d)
 
 	if flag==1 and zone==1 and (yI>Sy_min and yI<Sy_max):
-	   l1=flag*sign(xI)*10
-	   (n,e,d)=(-l1*math.sin(phi*math.pi/180),l1*math.cos(phi*math.pi/180),0)
+	    l1=flag*sign(xI)*10
+	    print('track and threshold y')
+	    (n,e,d)=(-l1*math.sin(phi*math.pi/180),l1*math.cos(phi*math.pi/180),0)
+	    print('n=',n)
+	    print('e=',e)
+	    print('d=',d)
 
         # send MAVLink msg
         goto_position_target_local_ned(n,e,d)
     
-        #else
-            # no msg  
+	print("Mode:",vehicle.mode.name)
+        
