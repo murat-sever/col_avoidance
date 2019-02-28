@@ -1,3 +1,0 @@
-/home/tristan-ubuntu/collisionAvoidance/build/CMakeFiles/rebuild_cache.dir
-/home/tristan-ubuntu/collisionAvoidance/build/CMakeFiles/edit_cache.dir
-/home/tristan-ubuntu/collisionAvoidance/build/CMakeFiles/collisionAvoidance.dir

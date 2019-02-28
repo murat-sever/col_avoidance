@@ -1,1 +1,0 @@
-/usr/bin/g++    -rdynamic CMakeFiles/collisionAvoidance.dir/main.cpp.o  -o collisionAvoidance -ldronecode_sdk -ldronecode_sdk_telemetry -ldronecode_sdk_action -ldronecode_sdk_offboard 
