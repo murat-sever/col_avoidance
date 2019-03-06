@@ -3,28 +3,33 @@
 //
 // Author: Julian Oes <julian@oes.ch>
 
+#include <iostream>
 #include <chrono>
+#include <ctime>
 #include <cstdint>
+#include <thread>
+#include <stdlib.h> /* abs */
+#include <stdio.h> /* printf */
+#include <math.h> /* sin */
+
 #include <dronecode_sdk/dronecode_sdk.h>
 #include <dronecode_sdk/plugins/action/action.h>
 #include <dronecode_sdk/plugins/telemetry/telemetry.h>
-#include<dronecode_sdk/plugins/offboard/offboard.h>
-#include <iostream>
-#include <thread>
-#include <stdlib.h> /* abs */
+#include <dronecode_sdk/plugins/offboard/offboard.h>
 
 using namespace dronecode_sdk;
-using namespace std::this_thread;
-using namespace std::chrono;
+using std::this_thread::sleep_for;
+using std::chrono::milliseconds;
+using std::chrono::seconds;
 
 #define ERROR_CONSOLE_TEXT "\033[31m" // Turn text on console red
 #define TELEMETRY_CONSOLE_TEXT "\033[34m" // Turn text on console blue
 #define NORMAL_CONSOLE_TEXT "\033[0m" // Restore normal console colour
 
 
-//ThresHold Box: center area in Image Frame
-#define X_THRESHOLD 20
-#define Y_THRESHOLD 20
+//Threshold Box: center area in Image Frame
+#define X_THRESHOLD 5
+#define Y_THRESHOLD 5
 
 
 void usage(std::string bin_name)
@@ -37,6 +42,15 @@ void usage(std::string bin_name)
               << "For example, to connect to the simulator use URL: udp://:14540" << std::endl;
 }
 
+int sgn(double v)
+{
+    if (v < 0) return -1;
+    if (v > 0) return 1;
+    return 0;
+}
+
+//MAIN
+
 int main(int argc, char **argv)
 {
     DronecodeSDK        dc;
@@ -45,7 +59,7 @@ int main(int argc, char **argv)
 
     //------------------------------<Connect to a Vehicle>------------------------------//
     //----------------------------------------------------------------------------------//
-    bool discovered_system = false;
+    //bool discovered_system;
     if (argc == 2)
     {
         connection_url      =       argv[1];
@@ -65,23 +79,31 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    //added
+    // Wait for the system to connect via heartbeat
+    while (!dc.is_connected()) {
+        std::cout << "Wait for system to connect via heartbeat" << std::endl;
+        sleep_for(seconds(1));
+    }
+
+    // System got discovered.
     System &system =    dc.system();
 
-    std::cout << "Waiting to discover system..." << std::endl;
-    dc.register_on_discover([&discovered_system](uint64_t uuid) {
-        std::cout << "Discovered system with UUID: " << uuid << std::endl;
-        discovered_system = true;
-    });
+//    std::cout << "Waiting to discover system..." << std::endl;
+//    dc.register_on_discover([&discovered_system](uint64_t uuid) {
+//        std::cout << "Discovered system with UUID: " << uuid << std::endl;
+//        discovered_system = true;
+//    });
 
-    // We usually receive heartbeats at 1Hz, therefore we should find a system after around 2
-    // seconds.
-    sleep_for(seconds(2));
+//    // We usually receive heartbeats at 1Hz, therefore we should find a system after around 2
+//    // seconds.
+//    sleep_for(seconds(2));
 
-    if (!discovered_system) {
-        std::cout << ERROR_CONSOLE_TEXT << "No system found, exiting." << NORMAL_CONSOLE_TEXT
-                  << std::endl;
-        return 1;
-    }
+//    if (!discovered_system) {
+//        std::cout << ERROR_CONSOLE_TEXT << "No system found, exiting." << NORMAL_CONSOLE_TEXT
+//                  << std::endl;
+//        return 1;
+//    }
 
 
     //----------------------------------------------------------------------------------//
@@ -89,8 +111,10 @@ int main(int argc, char **argv)
 
     //-------------------------<Monitor Important Variables>----------------------------//
 
-    auto telemetry = std::make_shared<Telemetry>(system);
     auto action = std::make_shared<Action>(system);
+    auto offboard = std::make_shared<Offboard>(system);
+    auto telemetry = std::make_shared<Telemetry>(system);
+
 
     // We want to listen to the altitude of the drone at 1 Hz.
     const Telemetry::Result set_rate_result = telemetry->set_rate_position(1.0);
@@ -118,6 +142,7 @@ int main(int argc, char **argv)
         std::cout << "Vehicle is getting ready to arm" << std::endl;
         sleep_for(seconds(1));
     }
+    std::cout << "System is ready" << std::endl;
 
     // Arm vehicle
     std::cout << "Arming..." << std::endl;
@@ -128,6 +153,7 @@ int main(int argc, char **argv)
                   << NORMAL_CONSOLE_TEXT << std::endl;
         return 1;
     }
+    std::cout << "Armed" << std::endl;
 
     // Take off
     std::cout << "Taking off..." << std::endl;
@@ -137,61 +163,168 @@ int main(int argc, char **argv)
                   << NORMAL_CONSOLE_TEXT << std::endl;
         return 1;
     }
+    std::cout << "In Air..." << std::endl;
 
     // Let it hover for a bit before landing again.
-    sleep_for(seconds(10));
+    sleep_for(seconds(5));
     //----------------------------------------------------------------------------------//
     //----------------------------------------------------------------------------------//
 
     //------------------------------<Variables of Interest>-----------------------------//
 
-    int xTargetCenterInImageFrame = 0;      // Given by detection algorithm
-    int yTargetCenterInImageFrame = 0;      // Given by detection algorithm
-    bool detected = false;                  // Given by detection algorithm
-    bool net = false;                       // Given by listening on SERVO_OUTPUT_RAW message if Servo is plugged on PXH AND listening on the MAV_FRAME parameter (Quadcopter / Hexacopter)
+    float xTargetCenterInImageFrame;      // Given by detection algorithm
+    float yTargetCenterInImageFrame;      // Given by detection algorithm
+    bool detected = true;                  // Given by detection algorithm
+    bool net = true;                       // Given by listening on SERVO_OUTPUT_RAW message if Servo is plugged on PXH AND listening on the MAV_FRAME parameter (Quadcopter / Hexacopter)
     //bool track = false;                     // Given by Task control
+    float l1;                         // tuning parameter
+    float l2;                         //
+    float n;
+    float e;
+    float d;
+    //float dronecode_sdk::Telemetry::EulerAngle::yaw_deg;
+    const double pi = M_PI;
+    Offboard::Result offboard_result;
+    float phi;
+
     //----------------------------------------------------------------------------------//
     //----------------------------------------------------------------------------------//
     //-------------------------------------<Algorithm>----------------------------------//
 
-    //TODO
-    auto offboard = std::make_shared<Offboard>(system);
-    Offboard::Result offboard_result;
+    //TO MODIFY
 
-    if(detected)
+    // Start offboard mode.
+    offboard->set_velocity_ned({0.0f, 0.0f, 0.0f, 0.0f});
+    offboard_result = offboard->start();
+    if (offboard_result != Offboard::Result::SUCCESS) {
+        std::cerr << "Offboard::start() failed: "
+        << Offboard::result_str(offboard_result) << std::endl;
+        }
+    if (offboard_result == Offboard::Result::SUCCESS) {
+        std::cerr << "Offboard::start() success: "
+        << Offboard::result_str(offboard_result) << std::endl;
+        }
+
+    auto start_time = std::chrono::system_clock::now();  // start chrono
+
+    while (offboard_result == Offboard::Result::SUCCESS)
     {
+        auto actual_time = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds = actual_time-start_time;
 
-        std::cout << "Target Detected:" << std::endl;
+        std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n\n";
 
-        // Start offboard mode.
-        offboard->set_velocity_body({0.0f, 0.0f, 0.0f, 0.0f});
-        offboard_result = offboard->start();
-        if (offboard_result != Offboard::Result::SUCCESS) {
-            std::cerr << "Offboard::start() failed: "
-            << Offboard::result_str(offboard_result) << std::endl;
-            }
-
-        if (!net)
+        if (elapsed_seconds.count() < 35)  //faire x=x-v*t
         {
-            std::cout << "No net, avoid" << std::endl;
-        }
-        else if (abs(xTargetCenterInImageFrame) < X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
-        {
-            std::cout << "Track, target within center area of Image Frame" << std::endl;
-        }
-        else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) > Y_THRESHOLD)
-        {
-            std::cout << "Track, target in one of the corners of the Image Frame" << std::endl;
-        }
-        else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
-        {
-            std::cout << "Track, target is Y-centered in the Image Frame" << std::endl;
+            //xTargetCenterInImageFrame = -10.0f+(elapsed_seconds.count());      // Dynamic input for testing
+            //yTargetCenterInImageFrame = -3.0f+(elapsed_seconds.count());
+            xTargetCenterInImageFrame = 10.0f-(elapsed_seconds.count());      // Dynamic input for testing
+            yTargetCenterInImageFrame = 0.0f ;//-3.0f+(elapsed_seconds.count());
+            std::cout << "x relative: " << xTargetCenterInImageFrame << "\n";
+            std::cout << "y relative: " << yTargetCenterInImageFrame << "\n";
         }
         else
         {
-            std::cout << "Track, target is X-centered in the Image Frame" << std::endl;
+            xTargetCenterInImageFrame = 0;      // After a time: go tracking
+            yTargetCenterInImageFrame = 0;
         }
+
+
+        if(detected)
+        {
+
+            std::cout << "Target Detected:" << std::endl;
+            phi = telemetry->attitude_euler_angle().yaw_deg;
+            std::cout << "Yaw angle: " << phi << "s\n";
+
+            if (!net)
+            {
+                std::cout << "No net, avoid" << std::endl;
+                l1=-sgn(xTargetCenterInImageFrame)*2;   // to be tuned
+                l2=sgn(yTargetCenterInImageFrame)*10;
+                n = -l1*sin(phi*pi/180);
+                e = l1*cos(phi*pi/180);
+                d = l2;
+                offboard->set_velocity_ned({n, e, d, 0.0f});
+                sleep_for(seconds(2));
+//                std::cout << "Turn to face East" << std::endl;
+//                offboard->set_velocity_ned({0.0f, 0.0f, 0.0f, 90.0f});
+//                sleep_for(seconds(1)); // Let yaw settle.
+
+//                {
+//                    const float step_size = 0.01f;
+//                    const float one_cycle = 2.0f * (float)M_PI;
+//                    const unsigned steps = 2 * unsigned(one_cycle / step_size);
+
+//                    std::cout << "Go North and back South" << std::endl;
+//                    for (unsigned i = 0; i < steps; ++i) {
+//                        float vx = 5.0f * sinf(i * step_size);
+//                        offboard->set_velocity_ned({vx, 0.0f, 0.0f, 90.0f});
+//                        sleep_for(milliseconds(10));
+//                    }
+//                }
+            }
+
+
+
+
+            // DON'T FORGET THE NET DISTANCE !!!!!
+
+
+            else if (abs(xTargetCenterInImageFrame) < X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
+            {
+                std::cout << "Track, target within center area of Image Frame" << std::endl;
+                n = 0;
+                e = 0;
+                d = 0;
+                offboard->set_velocity_ned({n, e, d, 0.0f});    // ici plutot set_velocity_body non???
+                sleep_for(seconds(2));
+
+
+                // ici plutot set_velocity_body non???
+                //n = -l1*sin(phi*pi/180);
+                //e = l1*cos(phi*pi/180);
+                //d = l2;
+            }
+            else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) > Y_THRESHOLD)
+            {
+                std::cout << "Track, target in one of the corners of the Image Frame" << std::endl;
+                l1=sgn(xTargetCenterInImageFrame)*2;   // to be tuned
+                l2=-sgn(yTargetCenterInImageFrame)*10;
+                n = -l1*sin(phi*pi/180);
+                e = l1*cos(phi*pi/180);
+                d = l2;
+                offboard->set_velocity_ned({n, e, d, 0.0f});
+                sleep_for(seconds(2));
+            }
+            else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
+            {
+                std::cout << "Track, target is Y-centered in the Image Frame" << std::endl;
+                l1=sgn(xTargetCenterInImageFrame)*2;   // to be tuned
+                n = -l1*sin(phi*pi/180);
+                e = l1*cos(phi*pi/180);
+                d = 0;
+                offboard->set_velocity_ned({n, e, d, 0.0f});
+                sleep_for(seconds(2));
+            }
+            else
+            {
+                std::cout << "Track, target is X-centered in the Image Frame" << std::endl;
+                l2=-sgn(yTargetCenterInImageFrame)*10;   // to be tuned
+                n = 0;
+                e = 0;
+                d = l2;
+                offboard->set_velocity_ned({n, e, d, 0.0f});
+                sleep_for(seconds(2));
+            }
+            offboard->set_velocity_ned({50.0f, 10.0f, 0.0f, 40.0f});
+            // a changer
+        }
+        //sleep_for(seconds(4));
+        //faire un set general ici?
     }
+
+    offboard->set_velocity_ned({n, e, d, 45.0f});
 
     //Stop offboard mode
     offboard_result = offboard->stop();
@@ -205,8 +338,6 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------------------------//
 
     //--------------------------------<Land and disarm>---------------------------------//
-    // Let it hover for a bit before landing again.
-    sleep_for(seconds(10));
 
     std::cout << "Landing..." << std::endl;
     const Action::Result land_result = action->land();
@@ -227,5 +358,5 @@ int main(int argc, char **argv)
     sleep_for(seconds(3));
     std::cout << "Finished..." << std::endl;
 
-    return 0;
+    return EXIT_SUCCESS;
 }

@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/vinorth/Desktop/col_avoidance/collisionAvoidance/main.cpp
+iostream
+-
+chrono
+-
+ctime
+-
+cstdint
+-
+thread
+-
+stdlib.h
+-
+stdio.h
+-
+math.h
+-
+dronecode_sdk/dronecode_sdk.h
+-
+dronecode_sdk/plugins/action/action.h
+-
+dronecode_sdk/plugins/telemetry/telemetry.h
+-
+dronecode_sdk/plugins/offboard/offboard.h
+-
+
