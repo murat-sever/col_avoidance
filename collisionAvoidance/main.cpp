@@ -28,8 +28,8 @@ using std::chrono::seconds;
 
 
 //Threshold Box: center area in Image Frame
-#define X_THRESHOLD 5
-#define Y_THRESHOLD 5
+#define X_THRESHOLD 0.2           // min = -1 and MAX = 1
+#define Y_THRESHOLD 0.2
 
 
 void usage(std::string bin_name)
@@ -174,15 +174,14 @@ int main(int argc, char **argv)
 
     float xTargetCenterInImageFrame;      // Given by detection algorithm
     float yTargetCenterInImageFrame;      // Given by detection algorithm
-    bool detected = true;                  // Given by detection algorithm
-    bool net = true;                       // Given by listening on SERVO_OUTPUT_RAW message if Servo is plugged on PXH AND listening on the MAV_FRAME parameter (Quadcopter / Hexacopter)
-    //bool track = false;                     // Given by Task control
-    float l1;                         // tuning parameter
-    float l2;                         //
+    bool detected = true;                 // Given by detection algorithm
+    bool net = true;                      // Given by listening on SERVO_OUTPUT_RAW message if Servo is plugged on PXH AND listening on the MAV_FRAME parameter (Quadcopter / Hexacopter)
+    //bool track = false;                 // Given by Task control !!
+    float l1;
+    float l2;                         // l1 and l2: tuning parameters for the velocity
     float n;
     float e;
     float d;
-    //float dronecode_sdk::Telemetry::EulerAngle::yaw_deg;
     const double pi = M_PI;
     Offboard::Result offboard_result;
     float phi;
@@ -205,22 +204,24 @@ int main(int argc, char **argv)
         << Offboard::result_str(offboard_result) << std::endl;
         }
 
-    auto start_time = std::chrono::system_clock::now();  // start chrono
+    auto start_time = std::chrono::system_clock::now();  // start chrono (for testing)
 
     while (offboard_result == Offboard::Result::SUCCESS)
     {
         auto actual_time = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = actual_time-start_time;
 
-        std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n\n";
+        std::cout << "\n elapsed time: " << elapsed_seconds.count() << "s\n";
 
         if (elapsed_seconds.count() < 35)  //faire x=x-v*t
         {
             //xTargetCenterInImageFrame = -10.0f+(elapsed_seconds.count());      // Dynamic input for testing
             //yTargetCenterInImageFrame = -3.0f+(elapsed_seconds.count());
-            xTargetCenterInImageFrame = 10.0f-(elapsed_seconds.count());      // Dynamic input for testing
-            yTargetCenterInImageFrame = 0.0f ;//-3.0f+(elapsed_seconds.count());
-            std::cout << "x relative: " << xTargetCenterInImageFrame << "\n";
+            //xTargetCenterInImageFrame = 1.0f-(elapsed_seconds.count())/10;      // Dynamic input for testing
+            //yTargetCenterInImageFrame = 0.0f ;//-3.0f+(elapsed_seconds.count());
+            xTargetCenterInImageFrame = cos(elapsed_seconds.count());      // Dynamic input for testing
+            yTargetCenterInImageFrame = sin(elapsed_seconds.count());
+            std::cout << "\n x relative: " << xTargetCenterInImageFrame << "\n";
             std::cout << "y relative: " << yTargetCenterInImageFrame << "\n";
         }
         else
@@ -246,26 +247,8 @@ int main(int argc, char **argv)
                 e = l1*cos(phi*pi/180);
                 d = l2;
                 offboard->set_velocity_ned({n, e, d, 0.0f});
-                sleep_for(seconds(2));
-//                std::cout << "Turn to face East" << std::endl;
-//                offboard->set_velocity_ned({0.0f, 0.0f, 0.0f, 90.0f});
-//                sleep_for(seconds(1)); // Let yaw settle.
-
-//                {
-//                    const float step_size = 0.01f;
-//                    const float one_cycle = 2.0f * (float)M_PI;
-//                    const unsigned steps = 2 * unsigned(one_cycle / step_size);
-
-//                    std::cout << "Go North and back South" << std::endl;
-//                    for (unsigned i = 0; i < steps; ++i) {
-//                        float vx = 5.0f * sinf(i * step_size);
-//                        offboard->set_velocity_ned({vx, 0.0f, 0.0f, 90.0f});
-//                        sleep_for(milliseconds(10));
-//                    }
-//                }
+                sleep_for(seconds(1));
             }
-
-
 
 
             // DON'T FORGET THE NET DISTANCE !!!!!
@@ -278,13 +261,7 @@ int main(int argc, char **argv)
                 e = 0;
                 d = 0;
                 offboard->set_velocity_ned({n, e, d, 0.0f});    // ici plutot set_velocity_body non???
-                sleep_for(seconds(2));
-
-
-                // ici plutot set_velocity_body non???
-                //n = -l1*sin(phi*pi/180);
-                //e = l1*cos(phi*pi/180);
-                //d = l2;
+                sleep_for(seconds(1));
             }
             else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) > Y_THRESHOLD)
             {
@@ -295,7 +272,7 @@ int main(int argc, char **argv)
                 e = l1*cos(phi*pi/180);
                 d = l2;
                 offboard->set_velocity_ned({n, e, d, 0.0f});
-                sleep_for(seconds(2));
+                sleep_for(seconds(1));
             }
             else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
             {
@@ -305,7 +282,7 @@ int main(int argc, char **argv)
                 e = l1*cos(phi*pi/180);
                 d = 0;
                 offboard->set_velocity_ned({n, e, d, 0.0f});
-                sleep_for(seconds(2));
+                sleep_for(seconds(1));
             }
             else
             {
@@ -315,9 +292,9 @@ int main(int argc, char **argv)
                 e = 0;
                 d = l2;
                 offboard->set_velocity_ned({n, e, d, 0.0f});
-                sleep_for(seconds(2));
+                sleep_for(seconds(1));
             }
-            offboard->set_velocity_ned({50.0f, 10.0f, 0.0f, 40.0f});
+            //offboard->set_velocity_ned({50.0f, 10.0f, 0.0f, 40.0f});
             // a changer
         }
         //sleep_for(seconds(4));
