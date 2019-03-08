@@ -16,6 +16,7 @@ endif()
 
 add_executable(collisionAvoidance
     main.cpp
+    udp_client_server.cpp
 )
 
 target_link_libraries(collisionAvoidance

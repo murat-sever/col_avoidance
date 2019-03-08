@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/vinorth/Desktop/col_avoidance/collisionAvoidance/main.cpp
+/home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/main.cpp
 iostream
 -
 chrono
@@ -23,6 +23,8 @@ stdio.h
 -
 math.h
 -
+string.h
+-
 dronecode_sdk/dronecode_sdk.h
 -
 dronecode_sdk/plugins/action/action.h
@@ -30,5 +32,25 @@ dronecode_sdk/plugins/action/action.h
 dronecode_sdk/plugins/telemetry/telemetry.h
 -
 dronecode_sdk/plugins/offboard/offboard.h
+-
+udp_client_server.h
+/home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/udp_client_server.h
+
+/home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/udp_client_server.cpp
+udp_client_server.h
+/home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/udp_client_server.h
+string.h
+-
+unistd.h
+-
+
+/home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/udp_client_server.h
+sys/types.h
+-
+sys/socket.h
+-
+netdb.h
+-
+stdexcept
 -
 

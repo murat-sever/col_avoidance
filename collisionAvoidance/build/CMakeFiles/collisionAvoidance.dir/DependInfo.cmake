@@ -4,7 +4,8 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/vinorth/Desktop/col_avoidance/collisionAvoidance/main.cpp" "/home/vinorth/Desktop/col_avoidance/collisionAvoidance/build/CMakeFiles/collisionAvoidance.dir/main.cpp.o"
+  "/home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/main.cpp" "/home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/build/CMakeFiles/collisionAvoidance.dir/main.cpp.o"
+  "/home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/udp_client_server.cpp" "/home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/build/CMakeFiles/collisionAvoidance.dir/udp_client_server.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

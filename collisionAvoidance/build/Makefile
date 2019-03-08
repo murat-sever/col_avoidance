@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/vinorth/Desktop/col_avoidance/collisionAvoidance
+CMAKE_SOURCE_DIR = /home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/vinorth/Desktop/col_avoidance/collisionAvoidance/build
+CMAKE_BINARY_DIR = /home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -80,9 +80,9 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/vinorth/Desktop/col_avoidance/collisionAvoidance/build/CMakeFiles /home/vinorth/Desktop/col_avoidance/collisionAvoidance/build/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/build/CMakeFiles /home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/build/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/vinorth/Desktop/col_avoidance/collisionAvoidance/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/vinorth/Desktop/col_avoidance_with_detection/collisionAvoidance/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -150,6 +150,33 @@ main.cpp.s:
 	$(MAKE) -f CMakeFiles/collisionAvoidance.dir/build.make CMakeFiles/collisionAvoidance.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+udp_client_server.o: udp_client_server.cpp.o
+
+.PHONY : udp_client_server.o
+
+# target to build an object file
+udp_client_server.cpp.o:
+	$(MAKE) -f CMakeFiles/collisionAvoidance.dir/build.make CMakeFiles/collisionAvoidance.dir/udp_client_server.cpp.o
+.PHONY : udp_client_server.cpp.o
+
+udp_client_server.i: udp_client_server.cpp.i
+
+.PHONY : udp_client_server.i
+
+# target to preprocess a source file
+udp_client_server.cpp.i:
+	$(MAKE) -f CMakeFiles/collisionAvoidance.dir/build.make CMakeFiles/collisionAvoidance.dir/udp_client_server.cpp.i
+.PHONY : udp_client_server.cpp.i
+
+udp_client_server.s: udp_client_server.cpp.s
+
+.PHONY : udp_client_server.s
+
+# target to generate assembly for a file
+udp_client_server.cpp.s:
+	$(MAKE) -f CMakeFiles/collisionAvoidance.dir/build.make CMakeFiles/collisionAvoidance.dir/udp_client_server.cpp.s
+.PHONY : udp_client_server.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -162,6 +189,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... udp_client_server.o"
+	@echo "... udp_client_server.i"
+	@echo "... udp_client_server.s"
 .PHONY : help
 
 

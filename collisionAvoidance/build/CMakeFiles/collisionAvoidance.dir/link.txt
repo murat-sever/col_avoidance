@@ -1,1 +1,1 @@
-/usr/bin/c++    -rdynamic CMakeFiles/collisionAvoidance.dir/main.cpp.o  -o collisionAvoidance -ldronecode_sdk -ldronecode_sdk_telemetry -ldronecode_sdk_action -ldronecode_sdk_offboard 
+/usr/bin/c++    -rdynamic CMakeFiles/collisionAvoidance.dir/main.cpp.o CMakeFiles/collisionAvoidance.dir/udp_client_server.cpp.o  -o collisionAvoidance -ldronecode_sdk -ldronecode_sdk_telemetry -ldronecode_sdk_action -ldronecode_sdk_offboard 

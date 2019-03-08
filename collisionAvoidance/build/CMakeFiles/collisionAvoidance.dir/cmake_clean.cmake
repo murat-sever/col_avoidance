@@ -1,5 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/collisionAvoidance.dir/main.cpp.o"
+  "CMakeFiles/collisionAvoidance.dir/udp_client_server.cpp.o"
   "collisionAvoidance.pdb"
   "collisionAvoidance"
 )

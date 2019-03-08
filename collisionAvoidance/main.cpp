@@ -8,19 +8,23 @@
 #include <ctime>
 #include <cstdint>
 #include <thread>
-#include <stdlib.h> /* abs */
-#include <stdio.h> /* printf */
-#include <math.h> /* sin */
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include <string.h>
 
-#include <dronecode_sdk/dronecode_sdk.h>
+#include <dronecode_sdk/dronecode_sdk.h>            //change folder??
 #include <dronecode_sdk/plugins/action/action.h>
 #include <dronecode_sdk/plugins/telemetry/telemetry.h>
 #include <dronecode_sdk/plugins/offboard/offboard.h>
+#include "udp_client_server.h"
 
 using namespace dronecode_sdk;
+//using namespace std;
 using std::this_thread::sleep_for;
 using std::chrono::milliseconds;
 using std::chrono::seconds;
+using namespace udp_client_server;
 
 #define ERROR_CONSOLE_TEXT "\033[31m" // Turn text on console red
 #define TELEMETRY_CONSOLE_TEXT "\033[34m" // Turn text on console blue
@@ -30,6 +34,7 @@ using std::chrono::seconds;
 //Threshold Box: center area in Image Frame
 #define X_THRESHOLD 0.2           // min = -1 and MAX = 1
 #define Y_THRESHOLD 0.2
+#define MAX_SIZE 1024
 
 
 void usage(std::string bin_name)
@@ -59,6 +64,9 @@ int main(int argc, char **argv)
 
     //------------------------------<Connect to a Vehicle>------------------------------//
     //----------------------------------------------------------------------------------//
+
+    udp_server* server = new udp_server("127.0.0.1", 8080);
+
     //bool discovered_system;
     if (argc == 2)
     {
@@ -172,8 +180,6 @@ int main(int argc, char **argv)
 
     //------------------------------<Variables of Interest>-----------------------------//
 
-    float xTargetCenterInImageFrame;      // Given by detection algorithm
-    float yTargetCenterInImageFrame;      // Given by detection algorithm
     bool detected = true;                 // Given by detection algorithm
     bool net = true;                      // Given by listening on SERVO_OUTPUT_RAW message if Servo is plugged on PXH AND listening on the MAV_FRAME parameter (Quadcopter / Hexacopter)
     //bool track = false;                 // Given by Task control !!
@@ -192,6 +198,7 @@ int main(int argc, char **argv)
 
     //TO MODIFY
 
+
     // Start offboard mode.
     offboard->set_velocity_ned({0.0f, 0.0f, 0.0f, 0.0f});
     offboard_result = offboard->start();
@@ -204,34 +211,51 @@ int main(int argc, char **argv)
         << Offboard::result_str(offboard_result) << std::endl;
         }
 
-    auto start_time = std::chrono::system_clock::now();  // start chrono (for testing)
+    //auto start_time = std::chrono::system_clock::now();  // start chrono (for testing)
+
+
 
     while (offboard_result == Offboard::Result::SUCCESS)
     {
-        auto actual_time = std::chrono::system_clock::now();
-        std::chrono::duration<double> elapsed_seconds = actual_time-start_time;
+//        auto actual_time = std::chrono::system_clock::now();
+//        std::chrono::duration<double> elapsed_seconds = actual_time-start_time;
 
-        std::cout << "\n elapsed time: " << elapsed_seconds.count() << "s\n";
+//        std::cout << "\n elapsed time: " << elapsed_seconds.count() << "s\n";
 
-        if (elapsed_seconds.count() < 35)  //faire x=x-v*t
-        {
-            //xTargetCenterInImageFrame = -10.0f+(elapsed_seconds.count());      // Dynamic input for testing
-            //yTargetCenterInImageFrame = -3.0f+(elapsed_seconds.count());
-            //xTargetCenterInImageFrame = 1.0f-(elapsed_seconds.count())/10;      // Dynamic input for testing
-            //yTargetCenterInImageFrame = 0.0f ;//-3.0f+(elapsed_seconds.count());
-            xTargetCenterInImageFrame = cos(elapsed_seconds.count());      // Dynamic input for testing
-            yTargetCenterInImageFrame = sin(elapsed_seconds.count());
-            std::cout << "\n x relative: " << xTargetCenterInImageFrame << "\n";
-            std::cout << "y relative: " << yTargetCenterInImageFrame << "\n";
-        }
-        else
-        {
-            xTargetCenterInImageFrame = 0;      // After a time: go tracking
-            yTargetCenterInImageFrame = 0;
-        }
+//        if (elapsed_seconds.count() < 35)  //faire x=x-v*t
+//        {
+//            //xTargetCenterInImageFrame = -10.0f+(elapsed_seconds.count());      // Dynamic input for testing
+//            //yTargetCenterInImageFrame = -3.0f+(elapsed_seconds.count());
+//            //xTargetCenterInImageFrame = 1.0f-(elapsed_seconds.count())/10;      // Dynamic input for testing
+//            //yTargetCenterInImageFrame = 0.0f ;//-3.0f+(elapsed_seconds.count());
+//            xTargetCenterInImageFrame = cos(elapsed_seconds.count());      // Dynamic input for testing
+//            yTargetCenterInImageFrame = sin(elapsed_seconds.count());
+//            std::cout << "\n x relative: " << xTargetCenterInImageFrame << "\n";
+//            std::cout << "y relative: " << yTargetCenterInImageFrame << "\n";
+//        }
+//        else
+//        {
+//            xTargetCenterInImageFrame = 0;      // After a time: go tracking
+//            yTargetCenterInImageFrame = 0;
+//        }
 
 
-        if(detected)
+        char* msg = new char[MAX_SIZE];
+
+        server->recv(msg, MAX_SIZE);
+
+        char* x_char = strtok(msg, " ");
+        char* y_char = strtok(NULL, " ");
+
+
+        std::cout << "x:" << x_char << std::endl;
+        std::cout << "y:" << y_char << std::endl;
+
+        float xTargetCenterInImageFrame = std::stof(x_char); // Given by detection algorithm (in Python)
+        float yTargetCenterInImageFrame = std::stof(y_char); // Given by detection algorithm (in Python)
+
+
+        if(detected)  // to be DELETED
         {
 
             std::cout << "Target Detected:" << std::endl;
@@ -297,9 +321,14 @@ int main(int argc, char **argv)
             //offboard->set_velocity_ned({50.0f, 10.0f, 0.0f, 40.0f});
             // a changer
         }
-        //sleep_for(seconds(4));
-        //faire un set general ici?
+
+        delete[] msg;
+
     }
+
+
+    //sleep_for(seconds(4));
+    //faire un set general ici?
 
     offboard->set_velocity_ned({n, e, d, 45.0f});
 
@@ -334,6 +363,8 @@ int main(int argc, char **argv)
     // We are relying on auto-disarming but let's keep watching the telemetry for a bit longer.
     sleep_for(seconds(3));
     std::cout << "Finished..." << std::endl;
+
+    delete server;
 
     return EXIT_SUCCESS;
 }
