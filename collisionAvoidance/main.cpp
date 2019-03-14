@@ -270,8 +270,7 @@ int main(int argc, char **argv)
                 n = -l1*sin(phi*pi/180);
                 e = l1*cos(phi*pi/180);
                 d = l2;
-                offboard->set_velocity_ned({n, e, d, 0.0f});
-                sleep_for(seconds(1));
+                offboard->set_velocity_ned({n, e, d, 45.0f});
             }
 
 
@@ -284,8 +283,7 @@ int main(int argc, char **argv)
                 n = 0;
                 e = 0;
                 d = 0;
-                offboard->set_velocity_ned({n, e, d, 0.0f});    // ici plutot set_velocity_body non???
-                sleep_for(seconds(1));
+                offboard->set_velocity_ned({n, e, d, 45.0f});    // ici plutot set_velocity_body non???
             }
             else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) > Y_THRESHOLD)
             {
@@ -295,8 +293,7 @@ int main(int argc, char **argv)
                 n = -l1*sin(phi*pi/180);
                 e = l1*cos(phi*pi/180);
                 d = l2;
-                offboard->set_velocity_ned({n, e, d, 0.0f});
-                sleep_for(seconds(1));
+                offboard->set_velocity_ned({n, e, d, 45.0f});
             }
             else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
             {
@@ -305,8 +302,7 @@ int main(int argc, char **argv)
                 n = -l1*sin(phi*pi/180);
                 e = l1*cos(phi*pi/180);
                 d = 0;
-                offboard->set_velocity_ned({n, e, d, 0.0f});
-                sleep_for(seconds(1));
+                offboard->set_velocity_ned({n, e, d, 45.0f});
             }
             else
             {
@@ -315,8 +311,7 @@ int main(int argc, char **argv)
                 n = 0;
                 e = 0;
                 d = l2;
-                offboard->set_velocity_ned({n, e, d, 0.0f});
-                sleep_for(seconds(1));
+                offboard->set_velocity_ned({n, e, d, 45.0f});
             }
             //offboard->set_velocity_ned({50.0f, 10.0f, 0.0f, 40.0f});
             // a changer
