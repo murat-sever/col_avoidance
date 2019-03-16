@@ -280,10 +280,11 @@ int main(int argc, char **argv)
             else if (abs(xTargetCenterInImageFrame) < X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
             {
                 std::cout << "Track, target within center area of Image Frame" << std::endl;
-                n = 0;
+                //offboard->set_velocity_body({0.0f, 0.0f, 0.0f, 0.0f});
+                n = 10;
                 e = 0;
                 d = 0;
-                offboard->set_velocity_ned({n, e, d, 45.0f});    // ici plutot set_velocity_body non???
+                offboard->set_velocity_ned({n, e, d, 0.0f});    // ici plutot set_velocity_body non???
             }
             else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) > Y_THRESHOLD)
             {
