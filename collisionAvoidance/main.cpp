@@ -180,14 +180,19 @@ int main(int argc, char **argv)
 
     //------------------------------<Variables of Interest>-----------------------------//
 
-    bool detected = true;                 // Given by detection algorithm
+    bool detected = true;                 // Given by detection algorithm (not really now -> we only send velocity commands when we receive a detection output)
     bool net = true;                      // Given by listening on SERVO_OUTPUT_RAW message if Servo is plugged on PXH AND listening on the MAV_FRAME parameter (Quadcopter / Hexacopter)
-    //bool track = false;                 // Given by Task control !!
+    //bool track = false;                 // Given by Task control (this idea was given up -> be careful not to track our own drones...)
     float l1;
-    float l2;                         // l1 and l2: tuning parameters for the velocity
+    float l2;                             // l1 and l2: tuning parameters for the velocity
     float n;
-    float e;
+    float e;                              // velocity components in NED frame (n, e, d) in m/s
     float d;
+    // + yaw_deg as 4th input : Yaw in degrees (0 North, positive is clock-wise looking from above)
+    float v_x;
+    float v_y;                            // velocity components in body frame (v_x, v_y, v_z) in m/s  -> forward / right / down
+    float v_z;
+    // + yawspeed_deg_s as 4th input : Yaw angular rate in deg/s (positive for clock-wise looking from above)
     const double pi = M_PI;
     Offboard::Result offboard_result;
     float phi;
@@ -195,9 +200,6 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------------------------//
     //----------------------------------------------------------------------------------//
     //-------------------------------------<Algorithm>----------------------------------//
-
-    //TO MODIFY
-
 
     // Start offboard mode.
     offboard->set_velocity_ned({0.0f, 0.0f, 0.0f, 0.0f});
@@ -215,7 +217,7 @@ int main(int argc, char **argv)
 
 
 
-    while (offboard_result == Offboard::Result::SUCCESS)
+    while (offboard_result == Offboard::Result::SUCCESS)   // here put a timer (10-15s?) for the test with real drones!!!
     {
 //        auto actual_time = std::chrono::system_clock::now();
 //        std::chrono::duration<double> elapsed_seconds = actual_time-start_time;
@@ -265,7 +267,7 @@ int main(int argc, char **argv)
             if (!net)
             {
                 std::cout << "No net, avoid" << std::endl;
-                l1=-sgn(xTargetCenterInImageFrame)*2;   // to be tuned
+                l1=-sgn(xTargetCenterInImageFrame)*10;   // to be tuned
                 l2=sgn(yTargetCenterInImageFrame)*10;
                 n = -l1*sin(phi*pi/180);
                 e = l1*cos(phi*pi/180);
@@ -274,23 +276,23 @@ int main(int argc, char **argv)
             }
 
 
-            // DON'T FORGET THE NET DISTANCE !!!!!
+            // DON'T FORGET THE NET DISTANCE !!!!! -> but how to evaluat ethis with velocity commands?
 
 
             else if (abs(xTargetCenterInImageFrame) < X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
             {
                 std::cout << "Track, target within center area of Image Frame" << std::endl;
                 //offboard->set_velocity_body({0.0f, 0.0f, 0.0f, 0.0f});
-                n = 10;
-                e = 0;
-                d = 0;
-                offboard->set_velocity_ned({n, e, d, 0.0f});    // ici plutot set_velocity_body non???
+                v_x = 10;
+                v_y = 0;
+                v_z = -20;
+                offboard->set_velocity_body({v_x, v_y, v_z, 0.0f});    // ici plutot set_velocity_body non???
             }
             else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) > Y_THRESHOLD)
             {
                 std::cout << "Track, target in one of the corners of the Image Frame" << std::endl;
-                l1=sgn(xTargetCenterInImageFrame)*2;   // to be tuned
-                l2=-sgn(yTargetCenterInImageFrame)*10;
+                l1=sgn(xTargetCenterInImageFrame)*10;   // to be tuned
+                l2=-sgn(yTargetCenterInImageFrame)*20;
                 n = -l1*sin(phi*pi/180);
                 e = l1*cos(phi*pi/180);
                 d = l2;
@@ -299,34 +301,26 @@ int main(int argc, char **argv)
             else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
             {
                 std::cout << "Track, target is Y-centered in the Image Frame" << std::endl;
-                l1=sgn(xTargetCenterInImageFrame)*2;   // to be tuned
+                l1=sgn(xTargetCenterInImageFrame)*10;   // to be tuned
                 n = -l1*sin(phi*pi/180);
                 e = l1*cos(phi*pi/180);
-                d = 0;
+                d = 20;
                 offboard->set_velocity_ned({n, e, d, 45.0f});
             }
             else
             {
                 std::cout << "Track, target is X-centered in the Image Frame" << std::endl;
-                l2=-sgn(yTargetCenterInImageFrame)*10;   // to be tuned
+                l2=-sgn(yTargetCenterInImageFrame)*20;   // to be tuned
                 n = 0;
                 e = 0;
                 d = l2;
                 offboard->set_velocity_ned({n, e, d, 45.0f});
             }
-            //offboard->set_velocity_ned({50.0f, 10.0f, 0.0f, 40.0f});
-            // a changer
         }
 
         delete[] msg;
 
     }
-
-
-    //sleep_for(seconds(4));
-    //faire un set general ici?
-
-    offboard->set_velocity_ned({n, e, d, 45.0f});
 
     //Stop offboard mode
     offboard_result = offboard->stop();

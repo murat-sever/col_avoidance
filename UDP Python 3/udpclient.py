@@ -20,7 +20,7 @@ while 1==1:
 	#else:
 	#     x=(time.time()-start_time)*0.05
 	#     y=(time.time()-start_time)*0.05
-	if i < 8:
+	if i < 4:
 		if i % 4 == 0:
 			x=1
 			y=1
@@ -33,6 +33,19 @@ while 1==1:
 		if i % 4 == 3:
 			x=1
 			y=-1
+	elif 3 < i < 8:
+		if i % 4 == 0:
+			x=0
+			y=1
+		if i % 4 == 1:
+			x=1
+			y=0
+		if i % 4 == 2:
+			x=0
+			y=-1
+		if i % 4 == 3:
+			x=-1
+			y=0
 	else:
 		x=0
 		y=0
@@ -46,7 +59,7 @@ while 1==1:
 	
 
 	finally:
-	     time.sleep(1)
+	     time.sleep(3)
 	     i=i+1
 #	     print('closing socket')
 #	     sock.close()
