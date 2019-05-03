@@ -25,6 +25,8 @@ math.h
 -
 string.h
 -
+iomanip
+-
 dronecode_sdk/dronecode_sdk.h
 -
 dronecode_sdk/plugins/action/action.h

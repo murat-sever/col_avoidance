@@ -3,7 +3,7 @@
 //
 // Author: Julian Oes <julian@oes.ch>
 
-#include <iostream> // std::cout, std::fixed
+#include <iostream>
 #include <chrono>
 #include <ctime>
 #include <cstdint>
@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include <iomanip> // std::setprecision
 
 #include <dronecode_sdk/dronecode_sdk.h>            //change folder??
 #include <dronecode_sdk/plugins/action/action.h>
@@ -135,12 +134,12 @@ int main(int argc, char **argv)
     }
 
     // Set up callback to monitor altitude while the vehicle is in flight
-   // telemetry->position_async([](Telemetry::Position position) {
-        //std::cout << TELEMETRY_CONSOLE_TEXT // set to blue
-          //        << "Altitude: " << position.relative_altitude_m << " m"
-            //      << NORMAL_CONSOLE_TEXT // set to default color again
-              //    << std::endl;
-    //});
+    telemetry->position_async([](Telemetry::Position position) {
+        std::cout << TELEMETRY_CONSOLE_TEXT // set to blue
+                  << "Altitude: " << position.relative_altitude_m << " m"
+                  << NORMAL_CONSOLE_TEXT // set to default color again
+                  << std::endl;
+    });
 
     //----------------------------------------------------------------------------------//
     //----------------------------------------------------------------------------------//
@@ -175,7 +174,7 @@ int main(int argc, char **argv)
     std::cout << "In Air..." << std::endl;
 
     // Let it hover for a bit before landing again.
-    //sleep_for(seconds(5));
+    sleep_for(seconds(5));
     //----------------------------------------------------------------------------------//
     //----------------------------------------------------------------------------------//
 
@@ -184,22 +183,19 @@ int main(int argc, char **argv)
     bool detected = true;                 // Given by detection algorithm (not really now -> we only send velocity commands when we receive a detection output)
     bool net = false;                      // Given by listening on SERVO_OUTPUT_RAW message if Servo is plugged on PXH AND listening on the MAV_FRAME parameter (Quadcopter / Hexacopter)
     //bool track = false;                 // Given by Task control (this idea was given up -> be careful not to track our own drones...)
-    //float l1;
-    //float l2;                             // l1 and l2: tuning parameters for the velocity
+    float l1;
+    float l2;                             // l1 and l2: tuning parameters for the velocity
     float n;
     float e;                              // velocity components in NED frame (n, e, d) in m/s
     float d;
     // + yaw_deg as 4th input : Yaw in degrees (0 North, positive is clock-wise looking from above)
-    //float v_x;
-    //float v_y;                            // velocity components in body frame (v_x, v_y, v_z) in m/s  -> forward / right / down
-    //float v_z;
+    float v_x;
+    float v_y;                            // velocity components in body frame (v_x, v_y, v_z) in m/s  -> forward / right / down
+    float v_z;
     // + yawspeed_deg_s as 4th input : Yaw angular rate in deg/s (positive for clock-wise looking from above)
-    //const double pi = M_PI;
+    const double pi = M_PI;
     Offboard::Result offboard_result;
-    //float psi;
-    bool hasStarted = false;
-    bool isOffboard = false;
-    //time_t current_time;
+    float phi;
 
     //----------------------------------------------------------------------------------//
     //----------------------------------------------------------------------------------//
@@ -220,80 +216,110 @@ int main(int argc, char **argv)
     //auto start_time = std::chrono::system_clock::now();  // start chrono (for testing)
 
 
-    auto start_time = std::chrono::system_clock::now();
-    while (1==1)   // here put a timer (10-15s?) for the test with real drones!!!
+
+    while (offboard_result == Offboard::Result::SUCCESS)   // here put a timer (10-15s?) for the test with real drones!!!
     {
-        //std::cout << "Waiting for receive server input..." << std::endl;
+//        auto actual_time = std::chrono::system_clock::now();
+//        std::chrono::duration<double> elapsed_seconds = actual_time-start_time;
+
+//        std::cout << "\n elapsed time: " << elapsed_seconds.count() << "s\n";
+
+//        if (elapsed_seconds.count() < 35)  //faire x=x-v*t
+//        {
+//            //xTargetCenterInImageFrame = -10.0f+(elapsed_seconds.count());      // Dynamic input for testing
+//            //yTargetCenterInImageFrame = -3.0f+(elapsed_seconds.count());
+//            //xTargetCenterInImageFrame = 1.0f-(elapsed_seconds.count())/10;      // Dynamic input for testing
+//            //yTargetCenterInImageFrame = 0.0f ;//-3.0f+(elapsed_seconds.count());
+//            xTargetCenterInImageFrame = cos(elapsed_seconds.count());      // Dynamic input for testing
+//            yTargetCenterInImageFrame = sin(elapsed_seconds.count());
+//            std::cout << "\n x relative: " << xTargetCenterInImageFrame << "\n";
+//            std::cout << "y relative: " << yTargetCenterInImageFrame << "\n";
+//        }
+//        else
+//        {
+//            xTargetCenterInImageFrame = 0;      // After a time: go tracking
+//            yTargetCenterInImageFrame = 0;
+//        }
+
+
         char* msg = new char[MAX_SIZE];
 
-        int ret = server->timed_recv(msg, MAX_SIZE, 5000); //5000ms
-        //std::cout << "ret" << ret << std::endl;
-        //std::cout << "isOffboard" << isOffboard << std::endl; //false: 0
-        if (ret == -1 && isOffboard == true)
-        {
-            //std::cout << "ret = -1" << std::endl;
-            offboard_result = offboard->stop();  // STOP OFFBOARD MODE
-            isOffboard = false;
-            hasStarted = false;
-        }
+        server->recv(msg, MAX_SIZE);
 
-        else
+        char* x_char = strtok(msg, " ");
+        char* y_char = strtok(NULL, " ");
+
+
+        std::cout << "x:" << x_char << std::endl;
+        std::cout << "y:" << y_char << std::endl;
+
+        float xTargetCenterInImageFrame = std::stof(x_char); // Given by detection algorithm (in Python)
+        float yTargetCenterInImageFrame = std::stof(y_char); // Given by detection algorithm (in Python)
+
+
+        if(detected)  // to be DELETED
         {
-            if (hasStarted == false)
+
+            std::cout << "Target Detected:" << std::endl;
+            phi = telemetry->attitude_euler_angle().yaw_deg;
+            std::cout << "Yaw angle: " << phi << "s\n";
+
+            if (!net)
             {
-                hasStarted = true;
-                offboard->set_velocity_body({0.0f, 0.0f, 0.0f, 0.0f});
-                //sleep_for(seconds(0.1)); // give some time to let it sink in
-                // START OFFBOARD MODE
-                offboard_result = offboard->start();
+                std::cout << "No net, avoid" << std::endl;
+                l1=-sgn(xTargetCenterInImageFrame)*1;   // to be tuned
+                l2=sgn(yTargetCenterInImageFrame)*1;
+                n = -l1*sin(phi*pi/180);
+                e = l1*cos(phi*pi/180);
+                d = l2;
+                offboard->set_velocity_ned({n, e, d, 45.0f});
             }
 
+
+            // DON'T FORGET THE NET DISTANCE !!!!! -> but how to evaluat ethis with velocity commands?
+
+
+            else if (abs(xTargetCenterInImageFrame) < X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
+            {
+                std::cout << "Track, target within center area of Image Frame" << std::endl;
+                //offboard->set_velocity_body({0.0f, 0.0f, 0.0f, 0.0f});
+                v_x = 10;
+                v_y = 0;
+                v_z = -20;
+                offboard->set_velocity_body({v_x, v_y, v_z, 0.0f});    // ici plutot set_velocity_body non???
+            }
+            else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) > Y_THRESHOLD)
+            {
+                std::cout << "Track, target in one of the corners of the Image Frame" << std::endl;
+                l1=sgn(xTargetCenterInImageFrame)*10;   // to be tuned
+                l2=-sgn(yTargetCenterInImageFrame)*20;
+                n = -l1*sin(phi*pi/180);
+                e = l1*cos(phi*pi/180);
+                d = l2;
+                offboard->set_velocity_ned({n, e, d, 45.0f});
+            }
+            else if (abs(xTargetCenterInImageFrame) > X_THRESHOLD && abs(yTargetCenterInImageFrame) < Y_THRESHOLD)
+            {
+                std::cout << "Track, target is Y-centered in the Image Frame" << std::endl;
+                l1=sgn(xTargetCenterInImageFrame)*10;   // to be tuned
+                n = -l1*sin(phi*pi/180);
+                e = l1*cos(phi*pi/180);
+                d = 20;
+                offboard->set_velocity_ned({n, e, d, 45.0f});
+            }
             else
             {
-                isOffboard = true;
-                char* x_char = strtok(msg, " ");
-                char* y_char = strtok(NULL, " ");
-                char* z_char = strtok(NULL, " ");
-
-
-                //std::cout << "x:" << x_char << std::endl;
-                //std::cout << "y:" << y_char << std::endl;
-                //std::cout << "z:" << z_char << std::endl;
-
-                //float xTargetCenterInImageFrame = std::stof(x_char); // Given by detection algorithm (in Python)
-                //float yTargetCenterInImageFrame = std::stof(y_char); // Given by detection algorithm (in Python)
-
-                float x_real = std::stof(x_char);
-                float y_real = std::stof(y_char);
-                float z_real = std::stof(z_char);
-
-                if(detected)  // to be DELETED
-                {
-
-                    //std::cout << "Target Detected:" << std::endl;
-                    //psi = telemetry->attitude_euler_angle().yaw_deg;
-                    //std::cout << "Yaw angle: " << psi << "s\n";
-
-                    if (!net)
-                    {
-                        //std::cout << "No net, avoid" << std::endl;
-                        n = x_real;
-                        e = -y_real*1.0f;
-                        d = -z_real*1.0f;
-                        offboard->set_velocity_body({n, e, d, 0.0f});
-                        auto actual_time = std::chrono::system_clock::now();
-                        std::chrono::duration<double> elapsed_seconds = actual_time-start_time;
-                        std::cout << "\n elapsed time: " << elapsed_seconds.count() << "s\n";
-                        //time_t time (time_t* timer);
-                        //current_time= time(NULL);
-                        //std::cout << std::fixed;
-                        //std::cout << std::setprecision(18) << current_time << " seconds\n";
-                    }
-                }
+                std::cout << "Track, target is X-centered in the Image Frame" << std::endl;
+                l2=-sgn(yTargetCenterInImageFrame)*20;   // to be tuned
+                n = 0;
+                e = 0;
+                d = l2;
+                offboard->set_velocity_ned({n, e, d, 45.0f});
             }
         }
-        sleep_for(seconds(1));
-        //delete[] msg;
+
+        delete[] msg;
+
     }
 
     //Stop offboard mode
